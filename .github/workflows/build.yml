@@ -1,0 +1,46 @@
+on:
+  pull_request:
+  merge_group:
+name: Build
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-binaries:
+    name: Build binaries for all platforms
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: sqruff-linux-x86_64-musl.tar.gz
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: sqruff
+          - name: sqruff-linux-aarch64-musl.tar.gz
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            bin: sqruff
+          - name: sqruff-windows-x86_64.zip
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: sqruff.exe
+          - name: sqruff-darwin-x86_64.tar.gz
+            os: macos-13
+            target: x86_64-apple-darwin
+            bin: sqruff
+          - name: sqruff-darwin-aarch64.tar.gz
+            os: macOS-latest
+            target: aarch64-apple-darwin
+            bin: sqruff
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@f7da4010930154943c99d13df0151dece91a924f # ratchet:houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          toolchain: stable
+          args: --locked --release --bin sqruff-md --package sqruff-md
+          strip: true
