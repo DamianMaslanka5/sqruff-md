@@ -5,7 +5,7 @@ use markdown::{mdast::Node, unist::Position};
 use sqruff_lib::core::{config::FluffConfig, linter::core::Linter};
 
 use crate::commands::Cli;
-use clap::Parser;
+use clap::{Error, Parser};
 
 mod commands;
 #[cfg(test)]
@@ -14,12 +14,33 @@ mod tests;
 fn main() {
     let args = Cli::parse();
 
-    let lnt = get_linter(args.config.unwrap_or(String::from("config.cfg")));
+    let config_path = args.config.unwrap_or(String::from("config.cfg"));
+
+    let path_exists = std::fs::exists(&config_path);
+
+    if path_exists.is_err() || path_exists.unwrap() == false {
+        println!("File {config_path} is not valid, provide valid path to config in --config");
+        std::process::exit(1);
+    }
+
+    let linter_result = get_linter(config_path.clone());
+
+    if linter_result.is_err() {
+        println!(
+            "Error while loading config file {}: {}",
+            &config_path,
+            linter_result.err().unwrap()
+        );
+        std::process::exit(1);
+    }
+
+    let linter = linter_result.unwrap();
 
     let mut paths = Vec::new();
 
     let mut files_checked = 0;
     let mut issues_found = 0;
+    let mut unparsable_found = 0;
 
     for arg_path in args.paths {
         for entry in glob(&arg_path).unwrap() {
@@ -38,10 +59,18 @@ fn main() {
 
         let process_result = process_content(
             content,
-            &lnt,
+            &linter,
             matches!(args.command, commands::Commands::Fix),
             Some(&path.display().to_string()),
         );
+
+        if !args.ignore_unparsable {
+            unparsable_found += process_result.unparsable_sql.len();
+
+            for unparsable in process_result.unparsable_sql {
+                println!("Unparsable sql in {}: \n{}", path.display(), unparsable)
+            }
+        }
 
         issues_found += process_result.issues_found;
 
@@ -50,9 +79,15 @@ fn main() {
         }
     }
 
-    println!("Files checked: {files_checked}, Issues found: {issues_found}.");
+    let mut msg = format!("Files checked: {files_checked}, Issues found: {issues_found}.");
 
-    if issues_found > 0 {
+    if !args.ignore_unparsable {
+        msg += format!(" Unparsable found: {unparsable_found}.\nYou can use --ignore-unparsable to ignore unparsable sql.").as_str()
+    }
+
+    println!("{msg}");
+
+    if issues_found > 0 || (!args.ignore_unparsable && unparsable_found > 0) {
         std::process::exit(1);
     }
 }
@@ -68,6 +103,7 @@ fn process_content(
     let mut fixed_code_blocks = Vec::<SQLCodeBlockToFix>::new();
 
     let mut issues_found = 0;
+    let mut unparsable_sql = Vec::<String>::new();
 
     for c in md.children().unwrap() {
         if let Node::Code(code_block) = c {
@@ -80,6 +116,12 @@ fn process_content(
             }
 
             let result = check_for_sql_linting_issues(&linter, code_block.value.as_str(), fix);
+
+            if result.is_unparsable {
+                unparsable_sql.push(code_block.value.to_string());
+                continue;
+            }
+
             if result.issues.is_empty() {
                 continue;
             }
@@ -163,15 +205,16 @@ fn process_content(
     return ContentProcessResult {
         issues_found,
         fixed_sql: fixed_content,
+        unparsable_sql,
     };
 }
 
-fn get_linter(config_path: String) -> Linter {
-    let read_file = std::fs::read_to_string(config_path).unwrap();
+fn get_linter(config_path: String) -> Result<Linter, Error> {
+    let read_file = std::fs::read_to_string(config_path)?;
     let config = FluffConfig::from_source(&read_file, None);
 
-    let lnt = Linter::new(config, None, None, false);
-    return lnt;
+    let lnt = Linter::new(config, None, None, true);
+    return Ok(lnt);
 }
 
 fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLintResult {
@@ -179,12 +222,12 @@ fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLin
 
     let mut is_sql_fixed = false;
     let mut fixed = None::<String>;
+    let mut is_unparsable = false;
     if fix {
         let fixed_sql = result.clone().fix_string();
 
         is_sql_fixed = sql != fixed_sql;
         if is_sql_fixed {
-            // dbg!(&fixed_sql);
             fixed = Some(fixed_sql);
         }
     }
@@ -197,6 +240,10 @@ fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLin
         if v.rule == None {
             // TODO rules is empty when sql is not valid
             // println!("INFO: Skipping violation without rule: {:?}", v);
+            if v.description == "Unparsable section" {
+                is_unparsable = true;
+                break;
+            }
             continue;
         }
         issues.push(SQLLintError {
@@ -209,6 +256,7 @@ fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLin
     return SQLLintResult {
         issues,
         fixed_sql: if is_sql_fixed { fixed } else { None },
+        is_unparsable,
     };
 }
 
@@ -221,6 +269,7 @@ struct SQLLintError {
 struct SQLLintResult {
     pub issues: Vec<SQLLintError>,
     pub fixed_sql: Option<String>,
+    pub is_unparsable: bool,
 }
 
 struct SQLCodeBlockToFix {
@@ -231,4 +280,5 @@ struct SQLCodeBlockToFix {
 struct ContentProcessResult {
     pub issues_found: u32,
     pub fixed_sql: Option<String>,
+    pub unparsable_sql: Vec<String>,
 }

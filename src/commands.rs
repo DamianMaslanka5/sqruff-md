@@ -11,6 +11,8 @@ pub struct Cli {
     pub config: Option<String>,
     #[arg(long, global = true)]
     pub paths: Vec<String>,
+    #[arg(long, global = true)]
+    pub ignore_unparsable: bool,
 }
 
 #[derive(Debug, Subcommand)]

@@ -29,3 +29,16 @@ fn fix_crlf() {
 
     assert_eq!(result.fixed_sql.unwrap(), expected);
 }
+
+#[test]
+fn unparsable() {
+    let md = "```sql
+sel 1
+```";
+
+    let result = process_content(md.to_string(), &default_linter(), false, None);
+
+    assert_eq!(1, result.unparsable_sql.len());
+
+    assert_eq!("sel 1", result.unparsable_sql.first().unwrap());
+}
