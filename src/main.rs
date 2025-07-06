@@ -5,7 +5,7 @@ use markdown::{mdast::Node, unist::Position};
 use sqruff_lib::core::{config::FluffConfig, linter::core::Linter};
 
 use crate::commands::Cli;
-use clap::Parser;
+use clap::{Error, Parser};
 
 mod commands;
 #[cfg(test)]
@@ -14,7 +14,27 @@ mod tests;
 fn main() {
     let args = Cli::parse();
 
-    let lnt = get_linter(args.config.unwrap_or(String::from("config.cfg")));
+    let config_path = args.config.unwrap_or(String::from("config.cfg"));
+
+    let path_exists = std::fs::exists(&config_path);
+
+    if path_exists.is_err() || path_exists.unwrap() == false {
+        println!("File {config_path} is not valid, provide valid path to config in --config");
+        std::process::exit(1);
+    }
+
+    let linter_result = get_linter(config_path.clone());
+
+    if linter_result.is_err() {
+        println!(
+            "Error while loading config file {}: {}",
+            &config_path,
+            linter_result.err().unwrap()
+        );
+        std::process::exit(1);
+    }
+
+    let linter = linter_result.unwrap();
 
     let mut paths = Vec::new();
 
@@ -39,7 +59,7 @@ fn main() {
 
         let process_result = process_content(
             content,
-            &lnt,
+            &linter,
             matches!(args.command, commands::Commands::Fix),
             Some(&path.display().to_string()),
         );
@@ -189,12 +209,12 @@ fn process_content(
     };
 }
 
-fn get_linter(config_path: String) -> Linter {
-    let read_file = std::fs::read_to_string(config_path).unwrap();
+fn get_linter(config_path: String) -> Result<Linter, Error> {
+    let read_file = std::fs::read_to_string(config_path)?;
     let config = FluffConfig::from_source(&read_file, None);
 
     let lnt = Linter::new(config, None, None, true);
-    return lnt;
+    return Ok(lnt);
 }
 
 fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLintResult {
