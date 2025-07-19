@@ -27,4 +27,9 @@ pub enum Commands {
         about = "Fix SQL files via passing a list of files or using stdin"
     )]
     Fix,
+    #[command(
+        name = "unparsable",
+        about = "Get only unparsable SQL"
+    )]
+    Unparsable,
 }

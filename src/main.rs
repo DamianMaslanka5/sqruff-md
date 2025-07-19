@@ -70,6 +70,10 @@ fn main() {
             for unparsable in process_result.unparsable_sql {
                 println!("Unparsable sql in {}: \n{}", path.display(), unparsable)
             }
+
+            if matches!(args.command, commands::Commands::Unparsable) {
+                continue;
+            }
         }
 
         issues_found += process_result.issues_found;
@@ -234,7 +238,7 @@ fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLin
 
     let mut issues = Vec::new();
 
-    for v in result.get_violations(None) {
+    for v in result.violations() {
         // dbg!(&v);
 
         if v.rule == None {
@@ -247,8 +251,8 @@ fn check_for_sql_linting_issues(linter: &Linter, sql: &str, fix: bool) -> SQLLin
             continue;
         }
         issues.push(SQLLintError {
-            message: v.description,
-            source_slice: v.source_slice,
+            message: v.description.clone(),
+            source_slice: v.source_slice.clone(),
             line: v.line_no,
         });
     }
