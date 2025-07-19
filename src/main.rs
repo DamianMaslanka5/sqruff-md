@@ -70,6 +70,10 @@ fn main() {
             for unparsable in process_result.unparsable_sql {
                 println!("Unparsable sql in {}: \n{}", path.display(), unparsable)
             }
+
+            if matches!(args.command, commands::Commands::Unparsable) {
+                continue;
+            }
         }
 
         issues_found += process_result.issues_found;
