@@ -504,12 +504,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
-name = "rustversion"
-version = "1.0.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
-
-[[package]]
 name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -587,9 +581,9 @@ dependencies = [
 
 [[package]]
 name = "sqruff-lib"
-version = "0.28.2"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7ff1bf3de72ebae131df2401a09d888c5eaa71dd4cd5276bd1aa91e8b79989c"
+checksum = "547a631269d1e0711baa1bafa7fe334873e2ffe0b1e41e3b3e9ccc7baf0d911b"
 dependencies = [
  "ahash",
  "common-path",
@@ -618,9 +612,9 @@ dependencies = [
 
 [[package]]
 name = "sqruff-lib-core"
-version = "0.28.2"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02ec3e65566cfaf909a12ad3ed635f2a032304be3d0a63cfb34f7bb56bc463f8"
+checksum = "898663dab60f0e1d208f8700dfbc338e1e4d1755765d5bc48f09dc4e0a0fbbeb"
 dependencies = [
  "ahash",
  "enum_dispatch",
@@ -640,9 +634,9 @@ dependencies = [
 
 [[package]]
 name = "sqruff-lib-dialects"
-version = "0.28.2"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6445151887913054ec7733ec54c291e9d5084502f0385352219f564a42431eda"
+checksum = "dc59bc5946bfa9cf951d705d512881b207fae35717eda41f9bb682a386aa94f2"
 dependencies = [
  "ahash",
  "itertools",
@@ -669,20 +663,19 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 
 [[package]]
 name = "strum_macros"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "rustversion",
  "syn 2.0.104",
 ]
 
