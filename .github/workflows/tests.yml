@@ -1,0 +1,15 @@
+on: push
+name: tests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    name: clickhouse-docs smoke test
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.89
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - run: ./smoke-test.sh
