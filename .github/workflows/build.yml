@@ -27,7 +27,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             bin: sqruff-md.exe
 
-          - name: sqruff-darwin-x86_64
+          - name: sqruff-md-darwin-x86_64
             os: macos-13
             target: x86_64-apple-darwin
             bin: sqruff-md
