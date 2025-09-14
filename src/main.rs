@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 use glob::glob;
+use log::{debug, error, info, warn};
 use markdown::{mdast::Node, unist::Position};
 use sqruff_lib::core::{config::FluffConfig, linter::core::Linter};
 
@@ -8,10 +9,14 @@ use crate::commands::Cli;
 use clap::{Error, Parser};
 
 mod commands;
+mod logger;
+
 #[cfg(test)]
 mod tests;
 
 fn main() {
+    let _ = logger::init();
+
     let args = Cli::parse();
 
     let config_path = args.config.unwrap_or(String::from("config.cfg"));
@@ -19,14 +24,14 @@ fn main() {
     let path_exists = std::fs::exists(&config_path);
 
     if path_exists.is_err() || path_exists.unwrap() == false {
-        println!("File {config_path} is not valid, provide valid path to config in --config");
+        error!("File {config_path} is not valid, provide valid path to config in --config");
         std::process::exit(1);
     }
 
     let linter_result = get_linter(config_path.clone());
 
     if linter_result.is_err() {
-        println!(
+        error!(
             "Error while loading config file {}: {}",
             &config_path,
             linter_result.err().unwrap()
@@ -55,6 +60,8 @@ fn main() {
             continue;
         }
 
+        debug!("Processing file: {}", path.display());
+
         files_checked += 1;
 
         let process_result = process_content(
@@ -68,7 +75,7 @@ fn main() {
             unparsable_found += process_result.unparsable_sql.len();
 
             for unparsable in process_result.unparsable_sql {
-                println!("Unparsable sql in {}: \n{}", path.display(), unparsable)
+                warn!("Unparsable sql in {}: \n{}", path.display(), unparsable)
             }
 
             if matches!(args.command, commands::Commands::Unparsable) {
@@ -89,7 +96,7 @@ fn main() {
         msg += format!(" Unparsable found: {unparsable_found}.\nYou can use --ignore-unparsable to ignore unparsable sql.").as_str()
     }
 
-    println!("{msg}");
+    info!("{msg}");
 
     if issues_found > 0 || (!args.ignore_unparsable && unparsable_found > 0) {
         std::process::exit(1);
@@ -119,6 +126,8 @@ fn process_content(
                 continue;
             }
 
+            debug!("Processing SQL code block: \n{}", code_block.value);
+
             let result = check_for_sql_linting_issues(&linter, code_block.value.as_str(), fix);
 
             if result.is_unparsable {
@@ -139,7 +148,7 @@ fn process_content(
                     .expect("position for code block should not be empty");
 
                 let line_with_issue = code_block_position.start.line + issue.line;
-                println!(
+                warn!(
                     "{}:{line_with_issue} - {} ({sql_with_issue})",
                     file_path.unwrap_or(&String::from("")),
                     issue.message
@@ -147,7 +156,7 @@ fn process_content(
 
                 issues_found += 1;
 
-                println!("{}", code_block.value);
+                info!("{}", code_block.value);
             }
 
             if result.fixed_sql != None {
