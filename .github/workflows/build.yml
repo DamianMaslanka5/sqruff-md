@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   build-binaries:
-    name: Build binaries for all platforms
+    name: Build binaries for all platformsasd
     runs-on: ${{ matrix.platform.os }}
     strategy:
       fail-fast: false
