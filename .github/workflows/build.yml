@@ -1,4 +1,7 @@
-on: push
+on:
+  pull_request:
+  merge_group:
+
 name: Build
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
