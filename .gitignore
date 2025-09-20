@@ -1,3 +1,4 @@
+release-artifacts/
 target/
 tmp/
 *.gz
